@@ -35,13 +35,27 @@ async function run() {
 
     app.post("/users", async (req, res) => {
       const user = req.body;
-      const result = await usersCollection.insertOne(user);
-      res.send(result);
+      const find_result = await usersCollection.findOne({ email: user.email })
+
+      if (find_result) {
+        res.send({ msg: "user already exist" });
+      } else {
+        const result = await usersCollection.insertOne(user);
+        res.send(result);
+      }
+
     });
 
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
+    });
+
+
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = await usersCollection.findOne({ email });
+      res.send(user);
     });
 
 
