@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv')
+const path = require("path");
+const { ObjectId } = require("mongodb");
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const app = express();
 dotenv.config();
@@ -11,6 +13,7 @@ app.use(express.json());
 
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 
 
@@ -54,7 +57,7 @@ async function run() {
     app.post("/scholarships", upload.single("universityImage"), async (req, res) => {
       try {
         const scholarship = req.body;
-        scholarship.universityImage = req.file.path;
+        scholarship.universityImage = req.file.path; // path save
         const result = await scholarshipCollection.insertOne(scholarship);
         res.send({ success: true, message: "Scholarship added successfully", result });
       } catch (err) {
@@ -77,6 +80,7 @@ async function run() {
     });
 
 
+
     app.get("/scholarships", async (req, res) => {
       try {
         const scholarships = await scholarshipCollection.find().toArray();
@@ -85,7 +89,26 @@ async function run() {
         console.error(err);
         res.status(500).send({ success: false, message: err.message });
       }
-    })
+    });
+
+
+    app.get("/scholarships/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const scholarship = await db
+          .collection("scholarships")
+          .findOne({ _id: new ObjectId(id) });
+
+        if (!scholarship) {
+          return res.status(404).json({ message: "Scholarship not found" });
+        }
+
+        res.json({ data: scholarship });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
 
 
     // Send a ping to confirm a successful connection
