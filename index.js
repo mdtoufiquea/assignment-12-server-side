@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/')
   },
   filename: function (req, file, cb) {
-    
+
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
@@ -28,7 +28,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 
+    fileSize: 5 * 1024 * 1024
   }
 });
 
@@ -115,14 +115,12 @@ async function run() {
       }
     });
 
+
     app.put("/scholarships/:id", upload.single("universityImage"), async (req, res) => {
       try {
         const id = req.params.id;
         console.log(" PUT Request received for ID:", id);
-        console.log(" File received:", req.file ? req.file.filename : "No file");
-        console.log(" Body data keys:", Object.keys(req.body));
 
-        
         if (!ObjectId.isValid(id)) {
           return res.status(400).json({
             success: false,
@@ -132,7 +130,6 @@ async function run() {
 
         const objectId = new ObjectId(id);
 
-        
         const existingDoc = await scholarshipCollection.findOne({ _id: objectId });
         if (!existingDoc) {
           return res.status(404).json({
@@ -141,42 +138,33 @@ async function run() {
           });
         }
 
+        const updateData = { ...req.body };
 
-        const textFields = [
-          'scholarshipName', 'universityName', 'country', 'city',
-          'subjectCategory', 'scholarshipCategory', 'degree', 'email'
-        ];
-
-        textFields.forEach(field => {
-          if (req.body[field] !== undefined) {
-            updateData[field] = req.body[field];
+        Object.keys(updateData).forEach(key => {
+          if (updateData[key] === '' || updateData[key] === undefined) {
+            delete updateData[key];
           }
         });
 
-        const numberFields = ['worldRank', 'tuitionFees', 'applicationFees', 'serviceCharge'];
-        numberFields.forEach(field => {
-          if (req.body[field] !== undefined) {
-            updateData[field] = Number(req.body[field]);
-          }
-        });
+        if (updateData.worldRank) updateData.worldRank = Number(updateData.worldRank);
+        if (updateData.tuitionFees) updateData.tuitionFees = Number(updateData.tuitionFees);
+        if (updateData.applicationFees) updateData.applicationFees = Number(updateData.applicationFees);
+        if (updateData.serviceCharge) updateData.serviceCharge = Number(updateData.serviceCharge);
 
-        if (req.body.deadline) updateData.deadline = new Date(req.body.deadline);
-        if (req.body.postDate) updateData.postDate = new Date(req.body.postDate);
+        if (updateData.deadline) updateData.deadline = new Date(updateData.deadline);
+        if (updateData.postDate) updateData.postDate = new Date(updateData.postDate);
 
         if (req.file) {
           updateData.universityImage = req.file.path;
-          console.log(" Image updated to:", req.file.path);
         }
 
-        console.log("Fields to update:", Object.keys(updateData));
+        console.log(" Updating with data:", updateData);
 
         const result = await scholarshipCollection.findOneAndUpdate(
           { _id: objectId },
           { $set: updateData },
           { returnDocument: "after" }
         );
-
-        console.log(" Update successful");
 
         res.json({
           success: true,
@@ -185,13 +173,35 @@ async function run() {
         });
 
       } catch (err) {
-        console.error("PUT ERROR:", err);
+        console.error(" PUT ERROR:", err);
         res.status(500).json({
           success: false,
           message: "Server error: " + err.message
         });
       }
     });
+
+
+    app.patch("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const { role } = req.body;
+
+      const result = await usersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { role } }
+      );
+
+      res.json(result);
+    });
+
+
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await usersCollection.deleteOne({ _id: new ObjectId(id) });
+      res.json(result);
+    });
+
+
     app.delete("/scholarships/:id", async (req, res) => {
       const { id } = req.params;
 
