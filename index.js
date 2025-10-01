@@ -6,6 +6,7 @@ const { ObjectId } = require("mongodb");
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const app = express();
 dotenv.config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 5000;
 
 app.use(cors())
@@ -51,6 +52,7 @@ async function run() {
     const db = client.db('ScholarX');
     const usersCollection = db.collection('users');
     const scholarshipCollection = db.collection("scholarships");
+    const appliedScholarshipCollection = db.collection("appliedScholarships");
 
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -77,6 +79,43 @@ async function run() {
         res.status(500).send({ success: false, message: err.message });
       }
     });
+
+
+
+    app.post("/create-payment-intent", async (req, res) => {
+      try {
+        const { amount } = req.body;
+        if (!amount) {
+          return res.status(400).send({ error: "Amount is required" });
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: parseInt(amount * 100),
+          currency: "usd",
+          payment_method_types: ["card"],
+        });
+
+        res.send({ clientSecret: paymentIntent.client_secret });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: err.message });
+      }
+    });
+
+
+
+    app.post("/apply-scholarship", async (req, res) => {
+      try {
+        const application = req.body;
+        const result = await appliedScholarshipCollection.insertOne(application);
+
+        res.send({ success: true, data: result });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ success: false, message: err.message });
+      }
+    });
+
 
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
@@ -112,6 +151,18 @@ async function run() {
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
+      }
+    });
+
+
+
+
+    app.get("/applied-scholarships", async (req, res) => {
+      try {
+        const result = await appliedScholarshipCollection.find().toArray();
+        res.send({ success: true, data: result });
+      } catch (err) {
+        res.status(500).send({ success: false, message: err.message });
       }
     });
 
