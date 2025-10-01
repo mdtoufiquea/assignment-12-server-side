@@ -117,6 +117,24 @@ async function run() {
     });
 
 
+    app.post("/applied-scholarships/:id/feedback", async (req, res) => {
+      const { feedback } = req.body;
+      try {
+        const result = await appliedScholarshipCollection.updateOne(
+          { _id: new ObjectId(req.params.id) },
+          { $set: { feedback } }
+        );
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ success: false, message: "Application not found" });
+        }
+        res.json({ success: true, message: "Feedback submitted successfully" });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    });
+
+
+
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
@@ -233,6 +251,25 @@ async function run() {
     });
 
 
+
+    app.put("/applied-scholarships/:id/status", async (req, res) => {
+      const { status } = req.body;
+      try {
+        const result = await appliedScholarshipCollection.updateOne(
+          { _id: new ObjectId(req.params.id) },
+          { $set: { status } }
+        );
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ success: false, message: "Application not found" });
+        }
+        res.json({ success: true, message: "Application status updated" });
+      } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+      }
+    });
+
+
+
     app.patch("/users/:id", async (req, res) => {
       const id = req.params.id;
       const { role } = req.body;
@@ -278,6 +315,8 @@ async function run() {
         });
       }
     });
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
