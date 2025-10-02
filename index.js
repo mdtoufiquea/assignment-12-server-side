@@ -53,6 +53,8 @@ async function run() {
     const usersCollection = db.collection('users');
     const scholarshipCollection = db.collection("scholarships");
     const appliedScholarshipCollection = db.collection("appliedScholarships");
+    const reviewsCollection = db.collection("reviews");
+
 
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -135,6 +137,19 @@ async function run() {
 
 
 
+    app.post("/reviews", async (req, res) => {
+      const review = req.body;
+      try {
+        const result = await reviewsCollection.insertOne(review);
+        res.send({ success: true, message: "Review submitted successfully", data: result });
+      } catch (err) {
+        res.status(500).send({ success: false, message: err.message });
+      }
+    });
+
+
+
+
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
@@ -183,6 +198,44 @@ async function run() {
         res.status(500).send({ success: false, message: err.message });
       }
     });
+
+
+
+    app.get("/applied-scholarships/user/:email", async (req, res) => {
+      const email = req.params.email;
+      try {
+        const result = await appliedScholarshipCollection.find({ userEmail: email }).toArray();
+        res.send({ success: true, data: result });
+      } catch (err) {
+        res.status(500).send({ success: false, message: err.message });
+      }
+    });
+
+
+
+
+    app.get("/reviews/scholarship/:id", async (req, res) => {
+      try {
+        const reviews = await reviewsCollection.find({ universityId: req.params.id }).toArray();
+        res.send({ success: true, data: reviews });
+      } catch (err) {
+        res.status(500).send({ success: false, message: err.message });
+      }
+    });
+
+
+
+    app.get("/reviews", async (req, res) => {
+      try {
+        const reviews = await reviewsCollection.find().toArray();
+        res.json({ success: true, data: reviews });
+      } catch (err) {
+        res.status(500).json({ success: false, message: "Failed to fetch reviews" });
+      }
+    });
+
+
+
 
 
     app.put("/scholarships/:id", upload.single("universityImage"), async (req, res) => {
@@ -267,6 +320,27 @@ async function run() {
         res.status(500).json({ success: false, message: err.message });
       }
     });
+
+
+
+    app.put("/applied-scholarships/:id", async (req, res) => {
+      const { id } = req.params;
+      const updateData = req.body;
+      try {
+        const existing = await appliedScholarshipCollection.findOne({ _id: new ObjectId(id) });
+        if (!existing) return res.status(404).send({ success: false, message: "Application not found" });
+        if (existing.status !== "pending") return res.status(400).send({ success: false, message: "Cannot edit processed application" });
+
+        const result = await appliedScholarshipCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updateData }
+        );
+        res.send({ success: true, message: "Application updated successfully" });
+      } catch (err) {
+        res.status(500).send({ success: false, message: err.message });
+      }
+    });
+
 
 
 
