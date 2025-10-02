@@ -235,6 +235,14 @@ async function run() {
     });
 
 
+    app.get("/reviews/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await reviewsCollection.find({ userEmail: email }).toArray();
+      res.send({ success: true, data: result });
+    });
+
+
+
 
 
 
@@ -342,6 +350,33 @@ async function run() {
     });
 
 
+    app.put("/reviews/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const updateDoc = {
+          $set: {
+            rating: req.body.rating,
+            comment: req.body.comment,
+          },
+        };
+
+        const result = await reviewsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          updateDoc
+        );
+
+        if (result.modifiedCount > 0) {
+          res.send({ success: true, modifiedCount: result.modifiedCount });
+        } else {
+          res.send({ success: false, modifiedCount: 0 });
+        }
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ success: false, error: err.message });
+      }
+    });
+
+
 
 
     app.patch("/users/:id", async (req, res) => {
@@ -389,6 +424,15 @@ async function run() {
         });
       }
     });
+
+
+    app.delete("/reviews/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await reviewsCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send({ success: true, deletedCount: result.deletedCount });
+    });
+
+
 
 
 
