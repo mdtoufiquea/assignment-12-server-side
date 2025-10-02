@@ -140,7 +140,14 @@ async function run() {
     app.post("/reviews", async (req, res) => {
       const review = req.body;
       try {
-        const result = await reviewsCollection.insertOne(review);
+        // universityId যোগ করুন
+        const reviewWithDate = {
+          ...review,
+          universityId: review.universityId || review.scholarshipId, // দুটোর মধ্যে যেকোনো একটি
+          reviewDate: new Date()
+        };
+
+        const result = await reviewsCollection.insertOne(reviewWithDate);
         res.send({ success: true, message: "Review submitted successfully", data: result });
       } catch (err) {
         res.status(500).send({ success: false, message: err.message });
@@ -216,13 +223,23 @@ async function run() {
 
     app.get("/reviews/scholarship/:id", async (req, res) => {
       try {
-        const reviews = await reviewsCollection.find({ universityId: req.params.id }).toArray();
+        const { id } = req.params;
+
+        // ObjectId validation
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).send({ success: false, message: "Invalid scholarship ID" });
+        }
+
+        const reviews = await reviewsCollection.find({
+          universityId: id
+        }).toArray();
+
         res.send({ success: true, data: reviews });
       } catch (err) {
+        console.error("Error fetching reviews:", err);
         res.status(500).send({ success: false, message: err.message });
       }
     });
-
 
 
     app.get("/reviews", async (req, res) => {
@@ -240,6 +257,24 @@ async function run() {
       const result = await reviewsCollection.find({ userEmail: email }).toArray();
       res.send({ success: true, data: result });
     });
+
+
+
+    
+    app.get("/top-scholarships", async (req, res) => {
+      try {
+        const scholarships = await scholarshipCollection
+          .find({})
+          .sort({ applicationFee: 1, postedDate: -1 }) 
+          .limit(6) 
+          .toArray();
+
+        res.send(scholarships);
+      } catch (error) {
+        res.status(500).send({ message: "Failed to fetch top scholarships" });
+      }
+    });
+
 
 
 
