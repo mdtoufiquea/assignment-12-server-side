@@ -140,10 +140,9 @@ async function run() {
     app.post("/reviews", async (req, res) => {
       const review = req.body;
       try {
-        // universityId যোগ করুন
         const reviewWithDate = {
           ...review,
-          universityId: review.universityId || review.scholarshipId, // দুটোর মধ্যে যেকোনো একটি
+          universityId: review.universityId || review.scholarshipId,
           reviewDate: new Date()
         };
 
@@ -225,7 +224,6 @@ async function run() {
       try {
         const { id } = req.params;
 
-        // ObjectId validation
         if (!ObjectId.isValid(id)) {
           return res.status(400).send({ success: false, message: "Invalid scholarship ID" });
         }
@@ -260,18 +258,36 @@ async function run() {
 
 
 
-    
+
     app.get("/top-scholarships", async (req, res) => {
       try {
         const scholarships = await scholarshipCollection
           .find({})
-          .sort({ applicationFee: 1, postedDate: -1 }) 
-          .limit(6) 
+          .sort({ applicationFee: 1, postedDate: -1 })
+          .limit(6)
           .toArray();
 
         res.send(scholarships);
       } catch (error) {
         res.status(500).send({ message: "Failed to fetch top scholarships" });
+      }
+    });
+
+
+
+    app.get("/stats", async (req, res) => {
+      try {
+        const totalUsers = await usersCollection.estimatedDocumentCount();
+        const totalScholarships = await scholarshipCollection.estimatedDocumentCount();
+        const totalApplied = await appliedScholarshipCollection.estimatedDocumentCount();
+
+        res.send({
+          users: totalUsers,
+          scholarships: totalScholarships,
+          applied: totalApplied
+        });
+      } catch (error) {
+        res.status(500).send({ message: "Failed to fetch stats" });
       }
     });
 
