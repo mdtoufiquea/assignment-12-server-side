@@ -292,6 +292,18 @@ async function run() {
     });
 
 
+  
+    app.get("/scholarship-stats", async (req, res) => {
+      try {
+        const pipeline = [
+          { $group: { _id: "$country", total: { $sum: 1 } } }
+        ];
+        const result = await scholarshipCollection.aggregate(pipeline).toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ message: "Failed to fetch stats" });
+      }
+    });
 
 
 
