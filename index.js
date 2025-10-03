@@ -229,7 +229,7 @@ async function run() {
         }
 
         const reviews = await reviewsCollection.find({
-          universityId: id
+          scholarshipId: id
         }).toArray();
 
         res.send({ success: true, data: reviews });
@@ -292,7 +292,7 @@ async function run() {
     });
 
 
-  
+
     app.get("/scholarship-stats", async (req, res) => {
       try {
         const pipeline = [
