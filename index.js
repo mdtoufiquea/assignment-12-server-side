@@ -11,29 +11,15 @@ const port = process.env.PORT || 5000;
 
 app.use(cors())
 
+// app.use(cors({
+//   origin: ['http://localhost:5173', 'https://assignmetn-12-server-side.vercel.app'],
+//   credentials: true,
+// }));
+
 app.use(express.json());
 
-const multer = require('multer');
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/')
-  },
-  filename: function (req, file, cb) {
 
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024
-  }
-});
-
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ylskxp9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -68,18 +54,13 @@ async function run() {
       }
     });
 
-    app.post("/scholarships", upload.single("universityImage"), async (req, res) => {
-      try {
-        const scholarship = req.body;
-        console.log("Scholarship data:", scholarship);
-        console.log("File data:", req.file);
-
-        scholarship.universityImage = req.file ? req.file.path : null;
-        const result = await scholarshipCollection.insertOne(scholarship);
-        res.send({ success: true, message: "Scholarship added successfully", result });
-      } catch (err) {
-        res.status(500).send({ success: false, message: err.message });
+    app.post("/scholarships", async (req, res) => {
+      const scholarship = req.body;
+      if (!scholarship.universityName || !scholarship.universityImage) {
+        return res.status(400).send({ message: "Name and image are required" });
       }
+      const result = await scholarshipCollection.insertOne(scholarship);
+      res.send(result);
     });
 
 
@@ -168,13 +149,8 @@ async function run() {
     });
 
     app.get("/scholarships", async (req, res) => {
-      try {
-        const scholarships = await scholarshipCollection.find().toArray();
-        res.send({ success: true, data: scholarships });
-      } catch (err) {
-        console.error(err);
-        res.status(500).send({ success: false, message: err.message });
-      }
+      const result = await scholarshipCollection.find().toArray();
+      res.send(result);
     });
 
     app.get("/scholarships/:id", async (req, res) => {
@@ -309,7 +285,7 @@ async function run() {
 
 
 
-    app.put("/scholarships/:id", upload.single("universityImage"), async (req, res) => {
+    app.put("/scholarships/:id",  async (req, res) => {
       try {
         const id = req.params.id;
         console.log(" PUT Request received for ID:", id);
