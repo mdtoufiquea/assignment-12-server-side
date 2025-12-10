@@ -9,12 +9,12 @@ dotenv.config();
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 5000;
 
-app.use(cors())
+// app.use(cors())
 
-// app.use(cors({
-//   origin: ['http://localhost:5173', 'https://assignmetn-12-server-side.vercel.app'],
-//   credentials: true,
-// }));
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://assignment-12-11ead.web.app'],
+  credentials: true,
+}));
 
 app.use(express.json());
 
@@ -33,7 +33,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // await client.connect();
+    await client.connect();
 
     const db = client.db('ScholarX');
     const usersCollection = db.collection('users');
